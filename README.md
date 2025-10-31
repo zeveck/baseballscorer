@@ -2,6 +2,8 @@
 
 A simple, intuitive web application for tracking baseball game scores. Perfect for coaches, scorekeepers, or anyone who wants to keep track of baseball games.
 
+**[Try the live demo →](https://zeveck.github.io/baseballscorer/)**
+
 ![Baseball Score Tracker Screenshot](screenshots/baseball-scorer-final.png)
 
 ## Features
