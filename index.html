@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Score Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>⚾</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .game-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        select, button, input {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.danger {
+            background: #dc3545;
+        }
+
+        button.danger:hover {
+            background: #c82333;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            min-width: 44px;
+        }
+
+        .dropdown-button:hover {
+            background: #5a6268;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 5px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 100;
+            min-width: 160px;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 10px 15px;
+            text-align: left;
+            background: white;
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:first-child {
+            border-radius: 5px 5px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-radius: 0 0 5px 5px;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .dropdown-item.danger-item {
+            color: #dc3545;
+        }
+
+        .dropdown-item.danger-item:hover {
+            background: #fff5f5;
+        }
+
+        .scoreboard-container {
+            position: relative;
+        }
+
+        .scoreboard {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            color: #2a5298;
+            font-size: 13px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            background: rgba(227, 242, 253, 0.95);
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .scroll-hint:active {
+            opacity: 0.8;
+        }
+
+        .scroll-hint.hidden {
+            display: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: #2a5298;
+            margin-bottom: 20px;
+        }
+
+        .modal-field {
+            margin-bottom: 20px;
+        }
+
+        .modal-field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .modal-field input,
+        .modal-field textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .modal-field input:focus,
+        .modal-field textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .modal-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-field input:read-only {
+            background: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .scoreboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .scoreboard-table th {
+            background: #2a5298;
+            color: white;
+            padding: 12px 8px;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #1e3c72;
+        }
+
+        .scoreboard-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border: 2px solid #ddd;
+            transition: background 0.2s;
+        }
+
+        .scoreboard-table tr:hover td {
+            background: #f8f9fa;
+        }
+
+        .team-name {
+            text-align: left;
+            font-weight: bold;
+            background: #f8f9fa;
+            min-width: 120px;
+        }
+
+        .team-name input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 0;
+        }
+
+        .team-name input:focus {
+            outline: 2px solid #2a5298;
+            padding: 4px;
+            border-radius: 3px;
+        }
+
+        .score-cell {
+            position: relative;
+            min-width: 50px;
+            padding: 0;
+        }
+
+        .score-cell input {
+            width: 100%;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 8px;
+            background: transparent;
+            transition: all 0.2s;
+        }
+
+        .score-cell input:hover {
+            background: #e3f2fd;
+        }
+
+        .score-cell input:focus {
+            outline: none;
+            border: 2px solid #2a5298;
+            background: #fff;
+        }
+
+        .total-cell {
+            background: #fff3cd;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .inning-header {
+            font-size: 14px;
+        }
+
+        .no-game {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .extra-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .game-controls {
+                display: grid;
+                grid-template-columns: 1fr auto auto auto;
+                gap: 10px;
+                align-items: center;
+            }
+
+            .game-controls select {
+                grid-column: 1 / -1;
+                min-width: 100%;
+            }
+
+            .game-controls button:not(.dropdown-button):not(.dropdown-item) {
+                grid-column: auto;
+            }
+
+            .game-controls .dropdown {
+                grid-column: auto;
+                justify-self: end;
+            }
+
+            .scoreboard {
+                padding: 10px 5px;
+            }
+
+            .scoreboard-table {
+                min-width: 500px;
+            }
+
+            .scoreboard-table th,
+            .scoreboard-table td {
+                padding: 6px 3px;
+                font-size: 13px;
+            }
+
+            .score-cell {
+                min-width: 38px;
+            }
+
+            .score-cell input {
+                padding: 6px 3px;
+                font-size: 14px;
+            }
+
+            .team-name {
+                min-width: 80px;
+                font-size: 13px;
+            }
+
+            .team-name input {
+                font-size: 13px;
+            }
+
+            .inning-header {
+                font-size: 12px;
+            }
+
+            .total-cell {
+                font-size: 16px;
+            }
+
+            .stats-input {
+                width: 45px;
+                font-size: 13px;
+                padding: 3px;
+            }
+
+            button, select {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+
+            .extra-controls button {
+                font-size: 13px;
+                padding: 7px 10px;
+            }
+        }
+
+        .stats-input {
+            width: 60px;
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 4px;
+            border-radius: 3px;
+        }
+
+        .stats-input:focus {
+            outline: 2px solid #2a5298;
+        }
+
+        .version {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: normal;
+            z-index: 5;
+            user-select: none;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚾ Baseball Score Tracker</h1>
+        </header>
+
+        <div class="game-controls">
+            <select id="gameSelect">
+                <option value="">Select a game...</option>
+            </select>
+            <button onclick="createNewGame()">+ New Game</button>
+            <button onclick="showGameInfo()" id="infoButton" style="display:none;">Game Info</button>
+            <div class="dropdown">
+                <button class="dropdown-button" onclick="toggleDropdown()">⋮</button>
+                <div class="dropdown-menu" id="actionsDropdown">
+                    <button class="dropdown-item" onclick="exportGames()">Export Games</button>
+                    <button class="dropdown-item" onclick="document.getElementById('importFile').click()">Import Games</button>
+                    <button class="dropdown-item danger-item" onclick="resetScores()">Reset Scores</button>
+                    <button class="dropdown-item danger-item" onclick="deleteCurrentGame()">Delete Game</button>
+                    <button class="dropdown-item danger-item" onclick="deleteAllGames()">Delete All Games</button>
+                </div>
+            </div>
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importGames(event)">
+        </div>
+
+        <div class="scoreboard-container" id="scoreboardContainer">
+            <div class="scoreboard" id="scoreboard">
+                <div class="no-game">Create a new game or select an existing one to start tracking scores.</div>
+            </div>
+        </div>
+
+        <!-- Game Info Modal -->
+        <div class="modal-overlay" id="gameInfoModal" onclick="if(event.target === this) hideGameInfo()">
+            <div class="modal">
+                <h2>Game Information</h2>
+                <div class="modal-field">
+                    <label>Date</label>
+                    <input type="date" id="modalDate">
+                </div>
+                <div class="modal-field">
+                    <label>Start Time</label>
+                    <input type="time" id="modalStartTime">
+                </div>
+                <div class="modal-field">
+                    <label>Notes</label>
+                    <textarea id="modalNotes" placeholder="Add notes about this game..."></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="hideGameInfo()">Close</button>
+                    <button onclick="saveGameInfo()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let games = [];
+        let currentGameId = null;
+
+        // Load games from localStorage on startup
+        function loadGames() {
+            const saved = localStorage.getItem('baseballGames');
+            if (saved) {
+                games = JSON.parse(saved);
+            }
+            updateGameSelect();
+        }
+
+        // Save games to localStorage
+        function saveGames() {
+            localStorage.setItem('baseballGames', JSON.stringify(games));
+        }
+
+        // Create a new game
+        function createNewGame() {
+            const gameId = Date.now();
+            const now = new Date();
+            const newGame = {
+                id: gameId,
+                awayTeam: {
+                    name: 'Away Team',
+                    innings: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    hits: 0,
+                    errors: 0
+                },
+                homeTeam: {
+                    name: 'Home Team',
+                    innings: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    hits: 0,
+                    errors: 0
+                },
+                createdAt: now.toLocaleString(),
+                date: now.toISOString().split('T')[0], // YYYY-MM-DD
+                startTime: now.toTimeString().slice(0, 5), // HH:MM
+                notes: ''
+            };
+
+            games.push(newGame);
+            saveGames();
+            updateGameSelect();
+            loadGame(gameId);
+        }
+
+        // Update the game select dropdown
+        function updateGameSelect() {
+            const select = document.getElementById('gameSelect');
+            select.innerHTML = '<option value="">Select a game...</option>';
+
+            games.forEach(game => {
+                const option = document.createElement('option');
+                option.value = game.id;
+                const dateStr = game.date || game.createdAt.split(',')[0];
+                option.textContent = `${game.awayTeam.name} vs ${game.homeTeam.name} (${dateStr})`;
+                select.appendChild(option);
+            });
+
+            if (currentGameId) {
+                select.value = currentGameId;
+            }
+        }
+
+        // Load a specific game
+        function loadGame(gameId) {
+            currentGameId = gameId;
+            const game = games.find(g => g.id === gameId);
+
+            if (!game) return;
+
+            document.getElementById('gameSelect').value = gameId;
+            document.getElementById('infoButton').style.display = 'inline-block';
+            renderScoreboard(game);
+        }
+
+        // Render the scoreboard
+        function renderScoreboard(game) {
+            const scoreboard = document.getElementById('scoreboard');
+            const numInnings = Math.max(game.awayTeam.innings.length, game.homeTeam.innings.length);
+
+            let html = '<table class="scoreboard-table">';
+
+            // Header row
+            html += '<tr><th>Team</th>';
+            for (let i = 1; i <= numInnings; i++) {
+                html += `<th class="inning-header">${i}</th>`;
+            }
+            html += '<th>R</th><th>H</th><th>E</th></tr>';
+
+            // Away team row
+            html += `<tr><td class="team-name"><input type="text" value="${game.awayTeam.name}" onchange="updateTeamName('away', this.value)"></td>`;
+            for (let i = 0; i < numInnings; i++) {
+                const score = game.awayTeam.innings[i] !== undefined ? game.awayTeam.innings[i] : 0;
+                html += `<td class="score-cell"><input type="text" value="${score}" onchange="updateScore('away', ${i}, this.value)" onfocus="this.select()"></td>`;
+            }
+            const awayRuns = game.awayTeam.innings.reduce((a, b) => a + b, 0);
+            html += `<td class="total-cell">${awayRuns}</td>`;
+            html += `<td><input type="text" class="stats-input" value="${game.awayTeam.hits}" onchange="updateStats('away', 'hits', this.value)" onfocus="this.select()"></td>`;
+            html += `<td><input type="text" class="stats-input" value="${game.awayTeam.errors}" onchange="updateStats('away', 'errors', this.value)" onfocus="this.select()"></td>`;
+            html += '</tr>';
+
+            // Home team row
+            html += `<tr><td class="team-name"><input type="text" value="${game.homeTeam.name}" onchange="updateTeamName('home', this.value)"></td>`;
+            for (let i = 0; i < numInnings; i++) {
+                const score = game.homeTeam.innings[i] !== undefined ? game.homeTeam.innings[i] : 0;
+                html += `<td class="score-cell"><input type="text" value="${score}" onchange="updateScore('home', ${i}, this.value)" onfocus="this.select()"></td>`;
+            }
+            const homeRuns = game.homeTeam.innings.reduce((a, b) => a + b, 0);
+            html += `<td class="total-cell">${homeRuns}</td>`;
+            html += `<td><input type="text" class="stats-input" value="${game.homeTeam.hits}" onchange="updateStats('home', 'hits', this.value)" onfocus="this.select()"></td>`;
+            html += `<td><input type="text" class="stats-input" value="${game.homeTeam.errors}" onchange="updateStats('home', 'errors', this.value)" onfocus="this.select()"></td>`;
+            html += '</tr>';
+
+            html += '</table>';
+
+            html += '<div class="extra-controls">';
+            html += '<button onclick="addInning()">+ Add Extra Inning</button>';
+            html += '</div>';
+
+            scoreboard.innerHTML = html;
+
+            // Add scroll indicator to container (single button that changes)
+            const container = document.getElementById('scoreboardContainer');
+            let scrollHint = document.getElementById('scrollHint');
+
+            if (!scrollHint) {
+                scrollHint = document.createElement('span');
+                scrollHint.id = 'scrollHint';
+                scrollHint.className = 'scroll-hint hidden';
+                scrollHint.textContent = 'Scroll →';
+                container.appendChild(scrollHint);
+            }
+
+            // Setup scroll indicator
+            setupScrollIndicator();
+        }
+
+        // Setup scroll indicator
+        function setupScrollIndicator() {
+            const scoreboard = document.querySelector('.scoreboard');
+            const scrollHint = document.getElementById('scrollHint');
+            if (!scoreboard || !scrollHint) return;
+
+            // Check if content is scrollable and update button
+            const updateScrollHint = () => {
+                const isScrollable = scoreboard.scrollWidth > scoreboard.clientWidth;
+                const scrollPos = scoreboard.scrollLeft;
+                const maxScroll = scoreboard.scrollWidth - scoreboard.clientWidth;
+
+                if (!isScrollable) {
+                    scrollHint.classList.add('hidden');
+                } else {
+                    scrollHint.classList.remove('hidden');
+
+                    // If scrolled away from left, show left arrow, otherwise show right arrow
+                    if (scrollPos > 10) {
+                        scrollHint.textContent = '← Scroll';
+                        scrollHint.onclick = () => {
+                            scoreboard.scrollTo({ left: 0, behavior: 'smooth' });
+                        };
+                    } else {
+                        scrollHint.textContent = 'Scroll →';
+                        scrollHint.onclick = () => {
+                            scoreboard.scrollTo({ left: scoreboard.scrollWidth, behavior: 'smooth' });
+                        };
+                    }
+                }
+            };
+
+            updateScrollHint();
+            scoreboard.removeEventListener('scroll', updateScrollHint);
+            scoreboard.addEventListener('scroll', updateScrollHint);
+        }
+
+        // Update a score
+        function updateScore(team, inning, value) {
+            const game = games.find(g => g.id === currentGameId);
+            if (!game) return;
+
+            const score = parseInt(value) || 0;
+            game[team + 'Team'].innings[inning] = Math.max(0, score);
+            saveGames();
+            renderScoreboard(game);
+        }
+
+        // Update team name
+        function updateTeamName(team, name) {
+            const game = games.find(g => g.id === currentGameId);
+            if (!game) return;
+
+            game[team + 'Team'].name = name || (team === 'away' ? 'Away Team' : 'Home Team');
+            saveGames();
+            updateGameSelect();
+        }
+
+        // Update stats (hits/errors)
+        function updateStats(team, stat, value) {
+            const game = games.find(g => g.id === currentGameId);
+            if (!game) return;
+
+            game[team + 'Team'][stat] = parseInt(value) || 0;
+            saveGames();
+        }
+
+        // Add an extra inning
+        function addInning() {
+            const game = games.find(g => g.id === currentGameId);
+            if (!game) return;
+
+            game.awayTeam.innings.push(0);
+            game.homeTeam.innings.push(0);
+            saveGames();
+            renderScoreboard(game);
+        }
+
+        // Reset all scores
+        function resetScores() {
+            const game = games.find(g => g.id === currentGameId);
+            if (!game) {
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            if (!confirm('Reset all scores to 0? This cannot be undone.')) {
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            game.awayTeam.innings = game.awayTeam.innings.map(() => 0);
+            game.homeTeam.innings = game.homeTeam.innings.map(() => 0);
+            game.awayTeam.hits = 0;
+            game.awayTeam.errors = 0;
+            game.homeTeam.hits = 0;
+            game.homeTeam.errors = 0;
+            saveGames();
+            renderScoreboard(game);
+            document.getElementById('actionsDropdown').classList.remove('show');
+        }
+
+        // Delete current game
+        function deleteCurrentGame() {
+            if (!currentGameId) {
+                alert('No game selected.');
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            if (!confirm('Delete this game? This cannot be undone.')) {
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            games = games.filter(g => g.id !== currentGameId);
+            currentGameId = null;
+            saveGames();
+            updateGameSelect();
+            document.getElementById('infoButton').style.display = 'none';
+            const scrollHint = document.getElementById('scrollHint');
+            if (scrollHint) scrollHint.classList.add('hidden');
+            document.getElementById('scoreboard').innerHTML = '<div class="no-game">Create a new game or select an existing one to start tracking scores.</div>';
+            document.getElementById('actionsDropdown').classList.remove('show');
+        }
+
+        // Export all games as JSON
+        function exportGames() {
+            if (games.length === 0) {
+                alert('No games to export.');
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            const dataStr = JSON.stringify(games, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `baseball-games-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            document.getElementById('actionsDropdown').classList.remove('show');
+        }
+
+        // Import games from JSON file
+        function importGames(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedGames = JSON.parse(e.target.result);
+                    if (!Array.isArray(importedGames)) {
+                        alert('Invalid file format. Expected an array of games.');
+                        return;
+                    }
+
+                    const confirmMsg = `Import ${importedGames.length} game(s)? This will replace all existing games.`;
+                    if (!confirm(confirmMsg)) {
+                        return;
+                    }
+
+                    games = importedGames;
+                    saveGames();
+                    currentGameId = null;
+                    updateGameSelect();
+                    document.getElementById('infoButton').style.display = 'none';
+                    document.getElementById('scoreboard').innerHTML = '<div class="no-game">Create a new game or select an existing one to start tracking scores.</div>';
+                    alert(`Successfully imported ${games.length} game(s)!`);
+                } catch (error) {
+                    alert('Error importing games: Invalid JSON file.');
+                }
+            };
+            reader.readAsText(file);
+            document.getElementById('actionsDropdown').classList.remove('show');
+            event.target.value = ''; // Reset file input
+        }
+
+        // Delete all games
+        function deleteAllGames() {
+            if (games.length === 0) {
+                alert('No games to delete.');
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            const confirmMsg = `Delete all ${games.length} game(s)? This cannot be undone.`;
+            if (!confirm(confirmMsg)) {
+                document.getElementById('actionsDropdown').classList.remove('show');
+                return;
+            }
+
+            games = [];
+            currentGameId = null;
+            saveGames();
+            updateGameSelect();
+            document.getElementById('infoButton').style.display = 'none';
+            const scrollHint = document.getElementById('scrollHint');
+            if (scrollHint) scrollHint.classList.add('hidden');
+            document.getElementById('scoreboard').innerHTML = '<div class="no-game">Create a new game or select an existing one to start tracking scores.</div>';
+            document.getElementById('actionsDropdown').classList.remove('show');
+        }
+
+        // Show game info modal
+        function showGameInfo() {
+            const game = games.find(g => g.id === currentGameId);
+            if (!game) return;
+
+            // Populate modal fields with proper formats
+            // Date should be YYYY-MM-DD, Time should be HH:MM
+            let dateValue = game.date || '';
+            let timeValue = game.startTime || '';
+
+            // If date is in legacy format (e.g., "10/31/2025"), convert it
+            if (dateValue && !dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const dateParts = dateValue.split('/');
+                if (dateParts.length === 3) {
+                    dateValue = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+                }
+            }
+
+            // If time is in legacy format (e.g., "8:59:32 PM"), convert it to 24-hour HH:MM
+            if (timeValue && timeValue.includes('M')) {
+                const date = new Date(`2000-01-01 ${timeValue}`);
+                if (!isNaN(date)) {
+                    timeValue = date.toTimeString().slice(0, 5);
+                }
+            }
+
+            document.getElementById('modalDate').value = dateValue;
+            document.getElementById('modalStartTime').value = timeValue;
+            document.getElementById('modalNotes').value = game.notes || '';
+
+            // Show modal
+            document.getElementById('gameInfoModal').classList.add('active');
+        }
+
+        // Hide game info modal
+        function hideGameInfo() {
+            document.getElementById('gameInfoModal').classList.remove('active');
+        }
+
+        // Save game notes
+        function saveGameInfo() {
+            const game = games.find(g => g.id === currentGameId);
+            if (!game) return;
+
+            game.date = document.getElementById('modalDate').value;
+            game.startTime = document.getElementById('modalStartTime').value;
+            game.notes = document.getElementById('modalNotes').value;
+            saveGames();
+            hideGameInfo();
+        }
+
+        // Handle game selection change
+        document.getElementById('gameSelect').addEventListener('change', function(e) {
+            if (e.target.value) {
+                loadGame(parseInt(e.target.value));
+            } else {
+                currentGameId = null;
+                document.getElementById('infoButton').style.display = 'none';
+                document.getElementById('scoreboard').innerHTML = '<div class="no-game">Create a new game or select an existing one to start tracking scores.</div>';
+            }
+        });
+
+        // Toggle dropdown menu
+        function toggleDropdown() {
+            const dropdown = document.getElementById('actionsDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                const dropdown = document.getElementById('actionsDropdown');
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        });
+
+        // Initialize on page load
+        loadGames();
+    </script>
+
+    <div class="version">v0.1.0</div>
+</body>
+</html>

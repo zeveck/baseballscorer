@@ -1,0 +1,11 @@
+{
+  "name": "baseball-scorer",
+  "version": "1.0.0",
+  "description": "Simple baseball score tracking app",
+  "scripts": {
+    "start": "npx http-server -p 1876 -o"
+  },
+  "keywords": ["baseball", "score", "tracker"],
+  "author": "",
+  "license": "MIT"
+}
